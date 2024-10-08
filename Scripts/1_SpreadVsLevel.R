@@ -2,154 +2,15 @@ library(dplR)
 library(ggplot2)
 library(zoo)
 library(tidyr)
-
-
-
-
-library(dplR)
-library(ggplot2)
-library(zoo)
-library(tidyr)
-
-# Define the base path
-base_path <- "~/Documents/Projects/MANCHA/QWAData/FINAL/concat/Summary/PoI/"
-
-# List all files that match the expected pattern
-file_paths <- list.files(base_path, pattern = "MXCWTRAD_.*_.*mu\\.txt", full.names = TRUE)
-
-# Function to process each file
-process_file <- function(file_path) {
-  # Extract method and resolution from the filename
-  parts <- strsplit(basename(file_path), "_")[[1]]
-  method <- parts[2]
-  resolution <- gsub(".txt", "", parts[3])
-  
-  # Read data
-  data <- read.table(file_path, header = TRUE, row.names = 1, sep=' ')
-  
-  # Convert to RWL format
-  rwl_data <- as.rwl(data)
-  
-  # Apply power transformation
-  powt_data <- powt(rwl_data, rescale = TRUE)
-  original_row_names <- row.names(data)
-  
-  data <- data.frame(na.approx(data, na.rm = FALSE))
-  row.names(data) <- original_row_names
-  
-  powt_data <- data.frame(na.approx(powt_data, na.rm = FALSE))
-  row.names(powt_data) <- original_row_names
-  
-  # Combine original and power transformed data with labels
-  data_long <- pivot_longer(data, cols = everything(), names_to = "Series", values_to = "Value")
-  data_long$Method <- method
-  data_long$Resolution <- resolution
-  data_long$Type <- "Original"
-  
-  powt_long <- pivot_longer(powt_data, cols = everything(), names_to = "Series", values_to = "Value")
-  powt_long$Method <- method
-  powt_long$Resolution <- resolution
-  powt_long$Type <- "Power Transformed"
-  
-  combined_data <- rbind(data_long, powt_long)
-  
-  return(combined_data)
-}
-
-# Process all files and compile results
-all_data <- do.call(rbind, lapply(file_paths, process_file))
-
-# Remove NA values for plotting
-all_data <- all_data[!is.na(all_data$Value), ]
-
-# Order the Resolution factor levels
-all_data$Resolution <- factor(all_data$Resolution, levels = paste0(seq(10, 200, by = 10), "mu"))
-
-# Plotting the distribution using density plots
-ggplot(all_data, aes(x = Value, fill = Type)) +
-  geom_density(alpha = 0.5) +
-  facet_grid(Resolution ~ Method, scales = "free") +
-  labs(x = "aMXD", y = "Density", title = "Distribution of Data Points by Aggregation Method and Resolution") +
-  theme_minimal() +
-  theme(strip.background = element_blank(),
-        strip.text.x = element_text(size = 12, face = "bold"),
-        strip.text.y = element_text(size = 12, face = "bold"))
-
-
-
-
-
-
-library(dplR)
-library(ggplot2)
-library(zoo)
-library(tidyr)
-
-# Define the base path
-base_path <- "~/Documents/Projects/MANCHA/QWAData/FINAL/concat/Summary/PoI/"
-
-# List all files that match the expected pattern
-file_paths <- list.files(base_path, pattern = "MXCWTRAD_.*_.*mu\\.txt", full.names = TRUE)
-
-# Function to process each file
-process_file <- function(file_path) {
-  # Extract method and resolution from the filename
-  parts <- strsplit(basename(file_path), "_")[[1]]
-  method <- parts[2]
-  resolution <- gsub(".txt", "", parts[3])
-  
-  # Read data
-  data <- read.table(file_path, header = TRUE, row.names = 1, sep=' ')
-  
-  # Convert to RWL format
-  rwl_data <- as.rwl(data)
-  
-  # Calculate statistics before power transformation
-  stats_before <- rwl.stats(rwl_data)
-  stats_before$Method <- method
-  stats_before$Resolution <- resolution
-  stats_before$Type <- "Before"
-  
-  # Apply power transformation
-  powt_data <- powt(rwl_data, rescale = TRUE)
-  
-  # Calculate statistics after power transformation
-  stats_after <- rwl.stats(powt_data)
-  stats_after$Method <- method
-  stats_after$Resolution <- resolution
-  stats_after$Type <- "After"
-  
-  # Combine before and after statistics
-  combined_stats <- rbind(stats_before, stats_after)
-  
-  return(combined_stats)
-}
-
-# Process all files and compile results
-all_stats <- do.call(rbind, lapply(file_paths, process_file))
-
-# Order the Resolution factor levels
-all_stats$Resolution <- factor(all_stats$Resolution, levels = paste0(seq(10, 200, by = 10), "mu"))
-
-# Plotting the distribution of skew using density plots
-ggplot(all_stats, aes(x = gini, fill = Type)) +
-  geom_density(alpha = 0.5) +
-  facet_grid(Resolution ~ Method, scales = "free") +
-  labs(x = "ar1", y = "Density", title = "Distribution of ar1 by Aggregation Method and Resolution") +
-  theme_minimal() +
-  theme(strip.background = element_blank(),
-        strip.text.x = element_text(size = 12, face = "bold"),
-        strip.text.y = element_text(size = 12, face = "bold"))
-
-
-
+library(tidyverse)
 
 
 # Define the base path
-base_path <- "~/Documents/Projects/MANCHA/QWAData/FINAL/concat/Summary/PoI/"
+base_path <- "~/Documents/Projects/MANCHA/toGit/Firth/Data/QWA/raw/"
 
 # List all files that match the expected pattern
-file_paths <- list.files(base_path, pattern = "MXCWTRAD_.*_.*mu\\.txt", full.names = TRUE)
+file_paths <- list.files(base_path, pattern = "MXDCWA_.*_.*mu\\.txt", full.names = TRUE)
+
 
 # Function to process each file
 process_file <- function(file_path) {
@@ -171,36 +32,30 @@ process_file <- function(file_path) {
   data <- data.frame(na.approx(data, na.rm = FALSE))
   row.names(data) <- original_row_names
   stats_data=rwl.stats(rwl_data)
-  write.csv(rwl.stats(rwl_data),paste(base_path,"RWI_stats_",basename(file_path),sep=''))
-  
+
   powt_data <- data.frame(na.approx(powt_data, na.rm = FALSE))
   row.names(powt_data) <- original_row_names
   powt_d=as.rwl(powt_data)
   stats_powt=rwl.stats(powt_d)
-  write.csv(rwl.stats(powt_d),paste(base_path,"powt_RWI_stats_",basename(file_path),sep=''))
-  
-  write.tucson(powt_data,paste(base_path,"powt_",basename(file_path),sep=''),header = NULL, append = FALSE,prec = 0.001) 
-  write.tucson(data,paste(base_path,"filled_",basename(file_path),sep=''),header = NULL, append = FALSE,prec = 0.001) 
-  
-  #detrend=rcs(rwl_data,"~/Documents/Projects/MANCHA/QWAData/FINAL/concat/Summary/PoI/arstan/PO.csv")
-  
+
+
   # Function to calculate moving stats and correlation
- # calc_stats <- function(series) {
- #   moving_avg <- rollapply(series, 2, mean, fill = NA, align = "right")
- #   moving_sd <- rollapply(series, 2, sd, fill = NA, align = "right")
- #  return(cor(moving_avg, moving_sd, use = "complete.obs"))
-  #}
+  calc_stats <- function(series) {
+    moving_avg <- rollapply(series, 2, mean, fill = NA, align = "right")
+    moving_sd <- rollapply(series, 2, sd, fill = NA, align = "right")
+   return(cor(moving_avg, moving_sd, use = "complete.obs"))
+  }
   
   # Calculate correlations
- # cor_before <- sapply(data, calc_stats)
-  #cor_after <- sapply(powt_data, calc_stats)
+  cor_before <- sapply(data, calc_stats)
+  cor_after <- sapply(powt_data, calc_stats)
   
- # return(data.frame(Series = names(cor_before),
-  # #                 Correlation_Before = cor_before,
-   #                 Correlation_After = cor_after,
-     #               Method = method,
-      #              Resolution = resolution,
-       #             Resolution_Order = as.numeric(gsub("mu", "", resolution))))
+  return(data.frame(Series = names(cor_before),
+                    Correlation_Before = cor_before,
+                    Correlation_After = cor_after,
+                    Method = method,
+                    Resolution = resolution,
+                    Resolution_Order = as.numeric(gsub("mu", "", resolution))))
 
 }
 
@@ -225,3 +80,4 @@ ggplot(results_long, aes(x = Series, y = Correlation, fill = Condition)) +
         strip.text.x = element_text(size = 12, face = "bold"),
         strip.text.y = element_text(size = 12, face = "bold"))
 
+ggsave("~/Documents/Projects/MANCHA/toGit/Firth/Figures/SpreadvsLevel.png",bg='white')
