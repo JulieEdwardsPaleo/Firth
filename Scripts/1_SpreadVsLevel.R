@@ -3,10 +3,10 @@ library(ggplot2)
 library(zoo)
 library(tidyr)
 library(tidyverse)
-
+library(here)
 
 # Define the base path
-base_path <- "~/Documents/Projects/MANCHA/toGit/Firth/Data/QWA/raw/"
+base_path <- here::here("Data/QWA/raw")
 
 # List all files that match the expected pattern
 file_paths <- list.files(base_path, pattern = "MXDCWA_.*_.*mu\\.txt", full.names = TRUE)

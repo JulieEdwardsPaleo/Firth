@@ -1,16 +1,20 @@
 library(dplR) #import for chronology building
 library(dplyr)
+library(here)
 rm(list=ls())
-Workdir='/Users/julieedwards/Documents/Projects/MANCHA/MXD/nomcrb08_June2024/'
-setwd(Workdir)
+
+
+# Define the base path
+Workdir <- here::here("Data/QWA/detrended/")
+
 filelist=list.files(Workdir)
-exclude=read.csv("/Users/julieedwards/Documents/Projects/MANCHA/QWAData/FINAL/concat/Summary/PoI/NA_interpolations.csv")
+exclude<-read.csv(here::here("Data/QWA/raw/NA_interpolations.csv"))
 
 
 for(i in 1:length(filelist)){
   
-  series=read.rwl(filelist[i])
-  write.csv(summary(series),paste(Workdir,"RWL_summary_",filelist[i],sep='')) # write summary stats of series
+  series=read.rwl(paste(Workdir,filelist[i],sep=''))
+  write.csv(summary(series),paste(here::here('Data/QWA/chronology_stats/'),"RWL_summary_",filelist[i],sep='')) # write summary stats of series
   
   if ("MCRB08" %in% colnames(series)) {
     Badremoved=select(series,-MCRB08)
@@ -27,10 +31,10 @@ for(i in 1:length(filelist)){
     }
   }
   
-  write.csv(rwi.stats(Badremoved,period = 'max'),paste(Workdir,"RWI_stats",filelist[i],sep=''))
+  write.csv(rwi.stats(Badremoved,period = 'max'),paste(here::here('Data/QWA/chronology_stats/'),"RWI_stats",filelist[i],sep=''))
   
   Chrono=chron(Badremoved,biweight = TRUE)
-  write.csv(Chrono,paste(Workdir,"noFill_",filelist[i],sep=''))
+  write.csv(Chrono,paste(here::here('Data/QWA/chronologies/'),"noFill_",filelist[i],sep=''))
   
   
   

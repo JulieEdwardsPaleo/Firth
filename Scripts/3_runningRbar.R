@@ -1,15 +1,18 @@
 library(dplR) #import for chronology building
 library(dplyr)
+
+
 rm(list=ls())
-Workdir='/Users/julieedwards/Documents/Projects/MANCHA/MXD/nomcrb08_June2024/'
-setwd(Workdir)
-filelist=list.files(Workdir)
-exclude=read.csv("/Users/julieedwards/Documents/Projects/MANCHA/QWAData/FINAL/concat/Summary/PoI/NA_interpolations.csv")
+Workdir<-here::here('Data/QWA/detrended')
+filelist=list.files(Workdir,pattern = "pbw*", full.names = TRUE)
+exclude<-read.csv(here::here("Data/QWA/raw/NA_interpolations.csv"))
 
-file='pbw80.ind'
+file_paths= list.files(Workdir, pattern = "pbw*", full.names = FALSE)
 
 
-series=read.rwl(file)
+
+for(i in 1:length(file_paths)){
+series=read.rwl(filelist[i])
 
 
 if ("MCRB08" %in% colnames(series)) {
@@ -26,7 +29,7 @@ for (j in 1:nrow(exclude)) {
     Badremoved[year, woodid] <- NA
   }
 }
-window.length=100
+window.length=50
 stats=rwi.stats.running(Badremoved, ids = NULL, period = "max",
                         method = "spearman",
                         prewhiten=FALSE,n=NULL,
@@ -37,7 +40,9 @@ stats=rwi.stats.running(Badremoved, ids = NULL, period = "max",
                         min.corr.overlap = min(30, window.length),
                         round.decimals = 3,
                         zero.is.missing = TRUE)
-plot(stats$mid.year,stats$rbar.eff,type='s',cex.main = .5,ylim = c(0, 0.8),xlab = "Year", ylab = "rbar")
-title(main= "50-year moving window rbar: pbw20")
-grid()
+
+write.csv(stats,paste(here::here('Data/QWA/chronology_stats/'),"rbar50year",file_paths[i],sep=''))
+
+}
+
 
