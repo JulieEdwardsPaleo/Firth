@@ -1,10 +1,8 @@
 import pandas as pd
-import numpy as np
 from sklearn.preprocessing import StandardScaler
 import os
 import netCDF4 as nc
-from datetime import datetime, timedelta
-import xarray as xr
+from datetime import datetime
 import utils as u  
 from statsmodels.stats.stattools import durbin_watson
 
