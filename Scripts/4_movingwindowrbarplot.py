@@ -2,12 +2,11 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 
-
-file_path = '/Data/QWA/chronology_stats/rbar50yearpbw10.ind'
+file_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'QWA', 'chronology_stats', 'rbar50yearpbw10.ind')
 pbw10rbar = pd.read_csv(file_path)
-file_path = '/Data/QWA/chronology_stats/rbar50yearpbw20.ind'
+file_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'QWA', 'chronology_stats', 'rbar50yearpbw20.ind')
 pbw20rbar = pd.read_csv(file_path)
-file_path = '/Data/QWA/chronology_stats/rbar50yearpbw80.ind'
+file_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'QWA', 'chronology_stats', 'rbar50yearpbw80.ind')
 pbw80rbar = pd.read_csv(file_path)
 
 fig=plt.figure(figsize=(4, 3))
