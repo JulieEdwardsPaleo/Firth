@@ -4,6 +4,10 @@
 
 
 ERA 5 climate data
+
+You must give appropriate credit (attribution) to ECMWF as outlined below, provide a link to the licence, and indicate if changes were made.
+
+
 Copyright statement: Copyright "© [year] European Centre for Medium-Range Weather Forecasts (ECMWF)".
 Source www.ecmwf.int
 Licence Statement: This data is published under a Creative Commons Attribution 4.0 International (CC BY 4.0). https://creativecommons.org/licenses/by/4.0/
