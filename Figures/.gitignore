@@ -2,4 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+.gitignore
+.DS_Store
 *.eps
