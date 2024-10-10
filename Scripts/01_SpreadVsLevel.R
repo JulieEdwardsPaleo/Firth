@@ -80,4 +80,4 @@ ggplot(results_long, aes(x = Series, y = Correlation, fill = Condition)) +
         strip.text.x = element_text(size = 12, face = "bold"),
         strip.text.y = element_text(size = 12, face = "bold"))
 
-ggsave("~/Documents/Projects/MANCHA/toGit/Firth/Figures/SpreadvsLevel.png",bg='white')
+ggsave(here::here("Figures/SpreadvsLevel.png"),bg='white')
