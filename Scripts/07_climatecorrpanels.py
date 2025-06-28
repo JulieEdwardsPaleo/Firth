@@ -9,6 +9,14 @@ from scipy.stats import pearsonr
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
+####### READ ME #########
+# This code creates Figure 2 for Edwards et al., 2025? for GRL and supplemental figures
+## The aMXD at multiple resolutions is correlated against daily ERA5 temperature data
+
+
+
+
+# READ IN wood anatomy DATA
 directory_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'QWA', 'chronologies')
 combined_df = pd.DataFrame()
 
@@ -21,7 +29,7 @@ for filename in os.listdir(directory_path):
         combined_df[column_name] = std_series
 sfrcs = combined_df
 
-
+# READ IN ERA5 daily DATA
 file_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'Climate', 'iera5_t2m_daily_-141.05E_68.67N_n.nc')
 dataset = nc.Dataset(file_path)
 t2m = dataset.variables['t2m'][:]
@@ -41,10 +49,10 @@ sub=subsfrcs
 fig, axs = plt.subplots(4,1,figsize=(6, 7),sharex=True)
 
 
-R0 = np.zeros((31, 365))
-P0 = np.zeros((31, 365))
+R0 = np.zeros((90, 365))
+P0 = np.zeros((90, 365))
 for e,column in enumerate(sub.columns):
-    for i in range(1, 32):
+    for i in range(1, 91):
         df['rolling_mean'] = df['temperature'].rolling(window=i, min_periods=1, center=True).mean()
         for doy in range(1, 366):
             temp_series = df[df['date'].dt.dayofyear == doy][['date', 'rolling_mean']]
@@ -53,25 +61,24 @@ for e,column in enumerate(sub.columns):
             temp_series = temp_series['rolling_mean']
             temp_series = temp_series[temp_series.index.isin(sub.index)]
             if not temp_series.empty:
-            # Align with the tree-ring data
                 aligned_years = temp_series.index
                 aligned_tree_ring = sub.loc[aligned_years][column]
                 if len(temp_series) == len(aligned_tree_ring):
                     R, p = pearsonr(temp_series, aligned_tree_ring)
                     R0[i-1, doy-1] = R
                     P0[i-1, doy-1] = p
-# Plotting
+# Plotting the correlations with significance stippling
     vmin, vmax = -.8, .8
     bins = np.linspace(-0.8, 0.8, 17) 
     ax=axs[e]
-    x, y = np.meshgrid(np.arange(1, 366), np.arange(1, 32))
+    x, y = np.meshgrid(np.arange(1, 366), np.arange(1, 91))
     c = ax.contourf(x, y, R0, bins,cmap='coolwarm', extend='both')
     cbar = fig.colorbar(c, ax=ax, orientation='vertical', pad=0.01,
                     ticks=[-0.8,-0.4,0,0.4,0.8],aspect=20,location='right')
     cbar.set_label('R', rotation=0, labelpad=5)
-    ax.set_yticks([0,10,20,30])
+    ax.set_yticks([0,20,40,60,80])
     stipple_x, stipple_y = np.where(P0 > 0.01)
-    ax.scatter(stipple_y + 1, stipple_x,s=.5, c='k', alpha=0.6)
+    ax.scatter(stipple_y + 1, stipple_x,s=.01, c='k', alpha=0.6)
     ax.set_ylabel('Window length',fontsize=9)
     ax_top = ax.twiny()
     ax_top.set_xlim(ax.get_xlim())
@@ -79,7 +86,7 @@ for e,column in enumerate(sub.columns):
     ax_top.set_xticklabels(['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'])
     ax_top.tick_params(axis='x')
     ax_top.set_xlabel(labelamxd[e],fontsize=10)
-    ax.text(-12,35,panel[e])
+    ax.text(-35,105,panel[e])
 ax.set_xlabel('Day of year (Center of window)',fontsize=10)
 plt.tight_layout()
 plt.savefig(os.path.join(os.path.dirname(os.getcwd()), 'Figures', 'climatepanel_ERA5_multires.eps'), format='eps',bbox_inches='tight')
@@ -89,9 +96,9 @@ plt.show()
 ## Running window daily analysis for 'best' chronology aMXD10
 x=sfrcs['pbw10']
 
-R0 = np.zeros((31, 365))
-P0 = np.zeros((31, 365))
-for i in range(1, 32):
+R0 = np.zeros((90, 365))
+P0 = np.zeros((90, 365))
+for i in range(1, 91):
     df['rolling_mean'] = df['temperature'].rolling(window=i, min_periods=1, center=True).mean()
     for doy in range(1, 366):
         temp_series = df[df['date'].dt.dayofyear == doy][['date', 'rolling_mean']]
@@ -107,16 +114,16 @@ for i in range(1, 32):
                 R, p = pearsonr(temp_series, aligned_tree_ring)
                 R0[i-1, doy-1] = R
                 P0[i-1, doy-1] = p
-
+# find window center and window length with highest R
 max_corr = np.max(R0)
 max_indices = np.unravel_index(np.argmax(R0, axis=None), R0.shape)
 max_window_length = max_indices[0] + 1
 max_day_of_year = max_indices[1] + 1
 
-print(f'Maximum correlation coefficient (R0) is {max_corr} for window length {max_window_length} and day of year {max_day_of_year}')
+print(f'Maximum correlation coefficient (R0) is {max_corr} for window length {max_window_length} and center at day of year {max_day_of_year}')
 
 
-######### Load in monthly data
+######### Load in ERA5 monthly data
 
 ###### ERA5 ###################
 file_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'Climate', 'monthly_iera5_t2m_-141.05E_68.67N_1950-2022_n.nc')
@@ -128,7 +135,8 @@ era5data = pd.DataFrame({'time': dates, 'tmp': temp})
 
 
 
-##### SEASCORR-esque analysis
+##### SEASCORR-esque analysis, Meko et al., 2011
+#Basically let's us see which seasonal window has the storngest correlation 
 df = pd.DataFrame(era5data)
 df.set_index('time', inplace=True)
 df_monthly = df.resample('M').mean()
@@ -138,7 +146,8 @@ df_monthly['month'] = df_monthly['time'].dt.month
 df_monthly = df_monthly[['year', 'month', 'tmp']]
 
 df_monthly['prev_tmp'] = df_monthly['tmp'].shift(1)
-# For January, use December of the previous year
+# For January end month, use December of the previous year etc.. 
+# So Jan end month at 3 month seasonal window is november and december of previous year and Jan of current year (ndJ)
 for year in df_monthly['year'].unique():
     if not df_monthly.loc[(df_monthly['year'] == year-1) & (df_monthly['month'] == 12), 'tmp'].empty:
         df_monthly.loc[(df_monthly['year'] == year) & (df_monthly['month'] == 1), 'prev_tmp'] = df_monthly.loc[(df_monthly['year'] == year-1) & (df_monthly['month'] == 12), 'tmp'].values[0]
@@ -212,13 +221,14 @@ lon = dataset.variables['lon'][:]
 if time[0] > time[-1]:
     time = time[::-1]
     temperature = temperature[::-1, :, :]
+
+#temporal subset on Wood anatomy time series to match length of climate data
 annual_time_series = sfrcs.loc[1950:2021]['pbw10']
 
-# Initialize arrays to store correlation coefficients and p-values
 correlation_map = np.empty_like(temperature[0, :, :])
 p_value_map = np.empty_like(temperature[0, :, :])
 
-# Loop over latitudes and longitudes
+# Loop over latitudes and longitudes to calculate R for each grid, there's probably a better/faster way to do this
 for i in range(temperature.shape[1]):
     for j in range(temperature.shape[2]):
         correlation_map[i, j], p_value_map[i, j] = pearsonr(temperature[:, i, j], annual_time_series)
@@ -235,7 +245,7 @@ lat_indices = np.where((lat >= 40) & (lat <= 90))[0]
 lon_indices = np.where((lon_sorted >= -180) & (lon_sorted <= -1))[0]
 lat_subset = lat[lat_indices]
 lon_subset = lon_sorted[lon_indices]
-# run correlation analysis for 
+# subset correlaiton results
 correlation_subset = correlation_map_sorted[np.ix_(lat_indices, lon_indices)]
 p_value_subset = p_value_map_sorted[np.ix_(lat_indices, lon_indices)]
 
@@ -254,20 +264,20 @@ ax1 = fig.add_subplot(gs[0, :])
 
 vmin, vmax = -.8, .8
 bins = np.linspace(-0.8, 0.8, 17)
-x, y = np.meshgrid(np.arange(1, 366), np.arange(1, 32))
+x, y = np.meshgrid(np.arange(1, 366), np.arange(1, 91))
 c = ax1.contourf(x, y, R0, bins, cmap='coolwarm', extend='both')
 cbar = fig.colorbar(c,  orientation='vertical', pad=0.01,
                     ticks=[-0.8, -0.4, 0, 0.4, 0.8], aspect=20, location='right')
 cbar.set_label('R', rotation=0, labelpad=5,fontsize=9)
 cbar.set_ticklabels(ticklabels=[-0.8,-0.4,0,0.4,0.8],fontsize=9)
 stipple_x, stipple_y = np.where(P0 > 0.01)
-ax1.scatter(stipple_y + 1, stipple_x, s=.05, c='k', alpha=0.6)
+ax1.scatter(stipple_y + 1, stipple_x, s=.01, c='k', alpha=0.6)
 ax1.yaxis.set_label_position("left")
 ax1.yaxis.tick_left()
 ax1.set_xticks([50,100,150,200,250,300,350])
 ax1.set_xticklabels(labels=[50,100,150,200,250,300,350],fontsize=9)
-ax1.set_yticks([0,10,20,30])
-ax1.set_yticklabels(labels=[0,10,20,30],fontsize=9)
+ax1.set_yticks([0,20,40,60,80])
+ax1.set_yticklabels(labels=[0,20,40,60,80],fontsize=9)
 ax1.set_ylabel('Window length (days)', fontsize=9)
 ax1.set_xlabel('Day of year (Center of window)', fontsize=9)
 ax_top = ax1.twiny()
@@ -302,6 +312,9 @@ axs[0].grid(True, which='both', axis='both', linestyle='--', linewidth=0.7, zord
 axs[0].set_axisbelow(True)
 axs[0].tick_params(axis='both', direction='in', labelsize=9)
 axs[0].set_yticks([-.2,0,.2,.4,.6,.8])
+axs[0].set_yticks([-.2,0,.2,.4,.6,.8])
+axs[0].set_yticklabels(labels=[],fontsize=9)
+
 # Plotting 2-month average correlation
 colors = get_bar_colors(correlation_df['2_month_avg_pval'])
 axs[1].bar(correlation_df['month'], correlation_df['2_month_avg_corr'], color=colors)
@@ -344,7 +357,7 @@ axs[3].yaxis.set_label_position("right")
 axs[3].yaxis.tick_right()
 axs[3].tick_params(axis='y', direction='in', labelright=True, labelleft=False, labelsize=9)
 axs[3].set_yticks([-.2,0,.2,.4,.6,.8])
-axs[3].set_yticklabels(ticklabels=[-0.2,0,0.2,0.4,0.6,0.8],fontsize=9)
+axs[3].set_yticklabels(labels=[-0.2,0,0.2,0.4,0.6,0.8],fontsize=9)
 
 # Ensure y-axis sharing manually
 for ax in axs[:3]:
@@ -352,7 +365,7 @@ for ax in axs[:3]:
 
 blue_patch = plt.Line2D([0], [0], color='#2367AD', lw=3, label='p < 0.01')
 lightblue_patch = plt.Line2D([0], [0], color='#D6EAF4', lw=3, label='p ≥ 0.01')
-legend = axs[3].legend(handles=[blue_patch, lightblue_patch], loc='upper left', fontsize=6,handlelength=0.5)
+legend = axs[0].legend(handles=[blue_patch, lightblue_patch], loc='upper left', fontsize=6,handlelength=0.5)
 legend.get_frame().set_linewidth(0)
 fig.text(-.09, 0.65, 'b)', fontsize=9)
 
@@ -361,16 +374,16 @@ fig.text(-.09, 0.65, 'b)', fontsize=9)
 gs2 = fig.add_gridspec(1, 4,left=-.0, right=.86, top=0.45,bottom=0,
                         wspace=0,hspace=0)
 # Plot c)
-ax3 = fig.add_subplot(gs2[0, :], projection=ccrs.PlateCarree())  # Ensure GeoAxes
+ax3 = fig.add_subplot(gs2[0, :], projection=ccrs.PlateCarree())  
 ax3.set_extent([-180, -70, 50, 80], crs=ccrs.PlateCarree())
 ax3.coastlines()
 lon_grid, lat_grid = np.meshgrid(lon_subset, lat_subset)
 correlation_plot = ax3.contourf(lon_grid, lat_grid, correlation_subset, bins, cmap='coolwarm', extend='both', transform=ccrs.PlateCarree())
 stipple_mask = p_value_subset > 0.01
 stipple_indices = np.where(stipple_mask)
-downsample_rate = 10  # Adjust this value to control the density of the stipples
+downsample_rate = 1  
 downsampled_indices = (stipple_indices[0][::downsample_rate], stipple_indices[1][::downsample_rate])
-ax3.scatter(lon_grid[downsampled_indices], lat_grid[downsampled_indices], color='k', s=1, transform=ccrs.PlateCarree())  # Ensure correct use of ax3
+ax3.scatter(lon_grid[downsampled_indices], lat_grid[downsampled_indices], s=.005, c='k', alpha=1, transform=ccrs.PlateCarree())  # Ensure correct use of ax3
 
 cbar = fig.colorbar(correlation_plot, ax=ax3, orientation='vertical', fraction=0.0133, pad=0.01,
                     ticks=[-0.8, -0.4, 0, 0.4, 0.8], aspect=20, location='right')

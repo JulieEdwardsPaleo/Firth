@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import zscore, pearsonr
 import powerlaw
-import pymannkendall as mk
 import netCDF4 as nc
 from datetime import datetime
 import os
@@ -14,9 +13,11 @@ from csaps import csaps
 from math import cos, pi
 from scipy.signal import lfilter
 from sklearn.preprocessing import scale
+from sklearn.preprocessing import StandardScaler
+from statsmodels.stats.stattools import durbin_watson
 
 
-models=pd.read_csv('/Users/julieedwards/Documents/Projects/MANCHA/Climate/models/jul_aug_avg_temperature.csv',index_col='year')
+
 
 
 start_year = 1150
@@ -26,26 +27,6 @@ spectra = []
 nw = 4
 kspec = int(2 * nw - 1)
 
-def interpolate_nans(data):
-    nans, x = np.isnan(data), lambda z: z.nonzero()[0]
-    data[nans] = np.interp(x(nans), x(~nans), data[~nans])
-    return data
-for col in models.columns:
-    model_data = models[col].loc[start_year:end_year].values
-    model_data = interpolate_nans(model_data)  # Interpolate over NaNs
-    spec = mtspec.MTSpec(model_data, nw, kspec, dt=1.0, nfft=0, iadapt=0, vn=None, lamb=None)
-    spectra.append(spec.rspec()[1])
-
-# Convert spectra list to a numpy array
-spectra = np.array(spectra)
-
-# Calculate the 5% and 95% percentiles
-lower_bound = np.percentile(spectra, 5, axis=0)
-upper_bound = np.percentile(spectra, 95, axis=0)
-median = np.percentile(spectra, 50, axis=0)
-
-# Get the periods
-periods = 1 / spec.rspec()[0]
 
 
 
@@ -115,13 +96,6 @@ avg_temp_per_year = filtered_df.groupby('year')['temperature'].mean()
 
 y=avg_temp_per_year-273.15
 
-import pandas as pd
-from sklearn.preprocessing import StandardScaler
-from statsmodels.stats.stattools import durbin_watson
-import numpy as np
-
-# Assuming long_cps is a function already defined somewhere in your code
-# Also assuming y is a pd.Series containing the average temperature per year in Kelvin
 
 proxy_columns = sfrcs.columns
 results = {
@@ -158,73 +132,79 @@ for proxy_column in proxy_columns:
 results_df = pd.DataFrame(results)
 recons_df = pd.DataFrame(Recons)
 
-f_path = '/Users/julieedwards/Documents/Projects/MANCHA/MXD/FR_MXD.csv'
 
-og=pd.read_csv(f_path)
-og.index=og['age_AD']
-ogoverlap=og.loc[1150:2002]['trsgiFir']
-
-ogyhat, ogs3R2c, ogs3RE, ogs3CE = long_cps(avg_temp_per_year-273.15, avg_temp_per_year.index, ogoverlap, ogoverlap.index, avg_temp_per_year.loc[1950:2002].index, avg_temp_per_year.loc[1950:2002].index)
+sfrcs=recons_df[['pbw10','pbw20','pbw80']]
 
 
-sfrcs=recons_df[['rcspbw10','rcspbw20','rcspbw40','rcspbw80']]
-
-lower_bound = lower_bound.flatten()
-upper_bound = upper_bound.flatten()
-median = median.flatten()
-periods = periods.flatten()
 start_year = 1150
 end_year = 1800
-colors=['#EB72AF','#B6306B','#84143D','#52000F']
-lab=['aMXD 10 $\mu$m','aMXD 20 $\mu$m','aMXD 40 $\mu$m','aMXD 80 $\mu$m']
+colors=['#D75E6A','#A21C57','#49006a']
+lab=['aMXD 10 $\mu$m','aMXD 20 $\mu$m','aMXD 80 $\mu$m']
 
-fig, axs = plt.subplots(1,2,figsize=(6, 3),sharey=True,sharex=True)
+fig, axs = plt.subplots(1,3,figsize=(6.5, 3),sharey=True,sharex=False)
 
 for i, column in enumerate(sfrcs.columns):
-            #sfrcs_data = spline(np.arange(Start,End+1),sfrcs[(sfrcs.index >= Start) & (sfrcs.index <= End)][f'{prefix}{res}'].values,2)
-            #rcs_data = spline(np.arange(Start,End+1),rcs[(rcs.index >= Start) & (rcs.index <= End)][f'{prefix}{res}'].values,2)
     sfrcs_data=sfrcs.loc[start_year:end_year][column].values
     x_sfrcs = mtspec.MTSpec(sfrcs_data, nw, kspec, dt=1.0, nfft=0, iadapt=0, vn=None, lamb=None).rspec()
 
     periods_sfrcs = 1 / x_sfrcs[0]
-    #ax = axs[i]
-    #mod=ax.fill_between(periods, lower_bound, upper_bound, color='lightgray', label='5%-95% envelope')
     axs[0].plot(periods_sfrcs, x_sfrcs[1], label=lab[i],color=colors[i])
-og_data=ogyhat.loc[start_year:end_year].values
-x_og = mtspec.MTSpec(og_data, nw, kspec, dt=1.0, nfft=0, iadapt=0, vn=None, lamb=None).rspec()
-periods_og = 1 / x_og[0]
-#axs[0].plot(periods_og, x_og[1], label='2013MXD',color='k')
+
 axs[0].set_xscale('log')
 axs[0].set_yscale('log')
-axs[0].grid(True,linestyle='--')
+axs[0].grid(True,linestyle='--',color=[0.8,0.8,0.8])
 axs[0].legend(frameon=False,fontsize=9,handlelength=1,borderpad=0,
            labelspacing=0.3,handletextpad=0.5,loc='upper left')
 
 axs[0].set_xlabel('Log(Period (years))',fontsize=9)
 axs[0].set_ylabel('Log(PSD)')
-axs[0].set_title('Pre-industrial aMXD spectra', y=1,fontsize=9)
+axs[0].set_title('Pre-industrial spectra', y=1,fontsize=9)
 start_year = 1150
 end_year = 2021
 for i, column in enumerate(sfrcs.columns):
-            #sfrcs_data = spline(np.arange(Start,End+1),sfrcs[(sfrcs.index >= Start) & (sfrcs.index <= End)][f'{prefix}{res}'].values,2)
-            #rcs_data = spline(np.arange(Start,End+1),rcs[(rcs.index >= Start) & (rcs.index <= End)][f'{prefix}{res}'].values,2)
     sfrcs_data=sfrcs.loc[start_year:end_year][column].values
     x_sfrcs = mtspec.MTSpec(sfrcs_data, nw, kspec, dt=1.0, nfft=0, iadapt=0, vn=None, lamb=None).rspec()
 
     periods_sfrcs = 1 / x_sfrcs[0]
-    #ax = axs[i]
-    #mod=ax.fill_between(periods, lower_bound, upper_bound, color='lightgray', label='5%-95% envelope')
     axs[1].plot(periods_sfrcs, x_sfrcs[1], label=lab[i],color=colors[i])
+
 axs[1].set_xscale('log')
 axs[1].set_yscale('log')
-axs[1].grid(True,linestyle='--')
+axs[0].set_xlim(2,1000)
+axs[1].set_xlim(2,1000)
+
+axs[1].grid(True,linestyle='--',color=[0.8,0.8,0.8])
 axs[1].legend(frameon=False,fontsize=9,handlelength=1,borderpad=0,
            labelspacing=0.3,handletextpad=0.5,loc='upper left')
 axs[1].set_xlabel('Log(Period (years))',fontsize=9)
-axs[1].set_title('Full period aMXD spectra', y=1,fontsize=9)
-axs[0].text(.7,250,'a)')
-axs[1].text(.7,250,'b)')
+axs[1].set_title('Full period spectra', y=1,fontsize=9)
+axs[0].text(1.2,300,'a)')
+axs[1].text(1.2,300,'b)')
+axs[2].text(1.5,300,'c)')
 
-plt.tight_layout()
+
+
+start_year = 1950
+end_year = 2021
+for i, column in enumerate(sfrcs.columns):
+    sfrcs_data=sfrcs.loc[start_year:end_year][column].values
+    x_sfrcs = mtspec.MTSpec(sfrcs_data, nw, kspec, dt=1.0, nfft=0, iadapt=0, vn=None, lamb=None).rspec()
+
+    periods_sfrcs = 1 / x_sfrcs[0]
+    axs[2].plot(periods_sfrcs, x_sfrcs[1], label=lab[i],color=colors[i])
+og_data=y.loc[start_year:end_year].values
+x_og = mtspec.MTSpec(og_data, nw, kspec, dt=1.0, nfft=0, iadapt=0, vn=None, lamb=None).rspec()
+periods_og = 1 / x_og[0]
+axs[2].plot(periods_og, x_og[1], label='ERA5 temperature',color='k')
+axs[2].set_xscale('log')
+axs[2].set_yscale('log')
+axs[2].set_xlim(2,70)
+axs[2].grid(True,linestyle='--',color=[0.8,0.8,0.8])
+axs[2].legend(frameon=False,fontsize=9,handlelength=1,borderpad=0,
+           labelspacing=0.3,handletextpad=0.5,loc='upper left')
+axs[2].set_xlabel('Log(Period (years))',fontsize=9)
+axs[2].set_title('1950–2021 spectra', y=1,fontsize=9)
+
+plt.tight_layout(w_pad=-0.5)
 plt.savefig('spectraMTM.eps',format='eps',bbox_inches='tight')
 plt.show()

@@ -89,7 +89,6 @@ for filename in os.listdir(directory_path):
         foo=df.to_xarray()  
         foo = foo.assign_coords(res=res)
         
-        # Append the xarray dataset to the list
         datasets.append(foo)
 
 combined_dataarray = xr.concat(datasets, dim='res')
@@ -112,12 +111,12 @@ rw_aligned = rw.reindex(columns=aMXD10.columns)
 
 def compute_spearman(df1, df2, start_year):
     corre_dict = {}
-    # Loop through each column and calculate the Spearman correlation
+    # Loop :calculate the Spearman correlation
     for column in df1.columns:
         corre_dict[column] = spearmanr(
-            df1.loc[start_year:][column],  # Data from the first DataFrame
-            df2.loc[start_year:][column],  # Data from the second DataFrame
-            nan_policy='omit'  # Omitting NaN values
+            df1.loc[start_year:][column],  
+            df2.loc[start_year:][column],  
+            nan_policy='omit'  
         ).statistic
     corre_df = pd.DataFrame(corre_dict, index=[0])
     return corre_df
@@ -132,11 +131,9 @@ corre100 = compute_spearman(aMXD100, rw_aligned, 1150)
 
 all_corre = pd.concat([corre10, corre20, corre40, corre80, corre100], axis=0, ignore_index=False)
 
-# Optionally, you can add a column to indicate the source DataFrame
 all_corre.index = ['corre10', 'corre20', 'corre40', 'corre80', 'corre100']
 
 corre_all=all_corre.T
-sns.kdeplot(all_corre)
 
 sp_results = {}
 for column in corre_all:
@@ -199,8 +196,7 @@ norm = plt.Normalize(mk_dfall['Mann-Kendall_Slope_Coefficient'].min(), mk_dfall[
 colors = plt.cm.Greys(norm(mk_dfall['Mann-Kendall_Slope_Coefficient']))
 
 fig,(ax1,ax2)=plt.subplots(1,2,figsize=(4, 4),sharey=True)
-ax1.axvline(x=0, color='grey', linestyle='--')
-ax1.scatter([0] * len(mk_dfall), mk_dfall['Mann-Kendall_Slope_Coefficient'], c=colors, cmap='Greys', s=100, edgecolor='black', linewidth=1.5)
+ax1.scatter([0] * len(mk_dfall), mk_dfall['Mann-Kendall_Slope_Coefficient'], c=colors, cmap='Greys', s=100, edgecolor='black', linewidth=1.5,zorder=4)
 ax1.set_title('MRW_all',fontsize=9)
 for i, row in mk_dfall.iterrows():
    ax1.annotate(row['Column'], (0, row['Mann-Kendall_Slope_Coefficient']), textcoords="offset points", xytext=(5,0), ha='left',fontsize=9)
@@ -211,8 +207,9 @@ ax1.text(-.105,0.0267,'a)')
 ax1.set_ylabel('1800-2021 Slope',fontsize=9)
 #ax1.set_yticklabels([0,0.005,0.01,0.015,0.02,0.025,0.03],fontsize=9)
 ax1.grid(True, axis='y')
+ax1.axvline(x=0, color='grey', linestyle='--')
 ax2.axvline(x=0, color='grey', linestyle='--')
-ax2.scatter([0] * len(mk_df300), mk_df300['Mann-Kendall_Slope_Coefficient'], c=colors, cmap='Greys', s=100, edgecolor='black', linewidth=1.5)
+ax2.scatter([0] * len(mk_df300), mk_df300['Mann-Kendall_Slope_Coefficient'], c=colors, cmap='Greys', s=100, edgecolor='black', linewidth=1.5,zorder=4)
 ax2.set_title('MRW<200µm',fontsize=9)
 for i, row in mk_df300.iterrows():
    ax2.annotate(row['Column'], (0, row['Mann-Kendall_Slope_Coefficient']), textcoords="offset points", xytext=(5,0), ha='left',fontsize=9)
@@ -233,7 +230,7 @@ labels=['aMXD10','aMXD20','aMXD40','aMXD80','aMXD100']
 
 fig=plt.subplots(1,1,figsize=(2, 4),sharey=True)
 plt.axvline(x=0, color='grey', linestyle='--')
-plt.scatter([0] * len(sp_df), sp_df['Spearman_Coefficient'], c=colors,cmap='Greys_r', s=100, edgecolor='black', linewidth=1.5)
+plt.scatter([0] * len(sp_df), sp_df['Spearman_Coefficient'], c=colors,cmap='Greys_r', s=100, edgecolor='black', linewidth=1.5,zorder=4)
 #lt.title('MRW_all',fontsize=9)
 for i, row in sp_df.iterrows():
    plt.annotate(labels[i], (0, row['Spearman_Coefficient']), textcoords="offset points", xytext=(5,0), ha='left',fontsize=9)

@@ -6,13 +6,11 @@ from pymannkendall import original_test as mk_test
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# reading in data for rbar output from 2_noFillchronos_FINAL
 def parse_filename_stats(filename):
     """Parse filenames starting with 'RWI_stats'."""
     parts = filename.split('_')
     if len(parts) < 2 or not parts[1].startswith('stats'):
         raise ValueError(f"Unexpected filename format: {filename}")
-#input files have to follow existing naming convention
     power_transformed = 'p' in parts[1]
     detrend_method = 'rcs' if 'rcs' in parts[1] else 'sf-rcs' #no rcs prefix in filename means sf-rcs detrending
     aggregation_method = 'q' if 'q' in parts[1] else 'bw'
@@ -98,7 +96,6 @@ def main(folder_path, is_chronology_stats=True):
                 rbar_eff = extract_rbar_eff(filepath)
                 if rbar_eff is not None:
                     params['rbar.eff'] = rbar_eff
-                # Only append if at least one of the new metrics is present
                 if any(k in params for k in ['ar1', 'mk_slope', 'mean', 'std', 'rbar.eff']):
                     results.append(params)
                 continue 
@@ -106,25 +103,36 @@ def main(folder_path, is_chronology_stats=True):
 
 def kruskal_wallis_test(df, group_col, value_col):
     groups = [df[df[group_col] == val][value_col] for val in df[group_col].unique()]
-    return kruskal(*groups)
+    
+    # Perform the Kruskal-Wallis test
+    H_statistic, p_value = kruskal(*groups)
+    
+    # Calculate eta squared 
+    k = len(groups)  # Number of groups
+    N = len(df)      # Total number of observations
+    eta_squared = (H_statistic - (k - 1)) / (N - k)
+    
+    return H_statistic, p_value, eta_squared
 
 def sensitivity_analysis(df, value_col, group_cols):
     analysis_results = {}
     for col in group_cols:
-        # Drop NaN values for the group column and value column
         df_clean = df.dropna(subset=[col, value_col])
-        group = df_clean.groupby(col).agg({value_col: 'mean'}).reset_index()
-        stat, p_value = kruskal_wallis_test(df_clean, col, value_col)
-        group['stat'] = stat
-        group['p_value'] = p_value
-        analysis_results[col] = group
+        
+        # Perform the Kruskal-Wallis test and get the results
+        stat, p_value, eta_squared = kruskal_wallis_test(df_clean, col, value_col)
+        
+        group_summary = df_clean.groupby(col).agg({value_col: 'mean'}).reset_index()
+        group_summary['stat'] = stat
+        group_summary['p_value'] = p_value
+        group_summary['eta_squared'] = eta_squared
+        analysis_results[col] = group_summary
+    
     return analysis_results
 
-# Define the folder paths
 folder_path_stats = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'QWA', 'chronology_stats')
 folder_path_chronologies = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'QWA', 'chronologies')
 
-# Get the DataFrames with the read-in data
 df_stats = main(folder_path_stats, is_chronology_stats=True)
 df_chronologies = main(folder_path_chronologies, is_chronology_stats=False)
 
@@ -181,22 +189,22 @@ def plot_unique_p_values(data):
                 unique_p_values.append({
                     'category': category,
                     'metric': metric,
-                    'p_value': row['p_value']
+                    'p_value': row['eta_squared']
                 })
     
     unique_p_values_df = pd.DataFrame(unique_p_values)
     plt.figure(figsize=(5.5, 4))    
-    palette = sns.color_palette("deep", n_colors=4)
+    palette = sns.color_palette("colorblind", n_colors=4)
     
     for idx, category in enumerate(unique_p_values_df['category'].unique()):
         subset = unique_p_values_df[unique_p_values_df['category'] == category]
         plt.scatter(subset['metric'], subset['p_value'], label=category, color=palette[idx])
     
     plt.title('Kruskal–Wallis Test Results',fontsize=9)
-    plt.ylabel('p-value (log scale)',fontsize=9)
-    plt.yscale('log')
-    plt.axhline(y=0.01, color='k', linestyle='--', linewidth=1.5, label=r'$\alpha = 0.01$')
-    plt.axhline(y=0.05, color='red', linestyle='--', linewidth=1.5, label=r'$\alpha = 0.05$')
+    plt.ylabel(r'Effect Sizes ($\eta^2$)', fontsize=9)
+    #plt.yscale('log')
+    #plt.axhline(y=0.01, color='k', linestyle='--', linewidth=1.5, label=r'$\alpha = 0.01$')
+    #plt.axhline(y=0.05, color='red', linestyle='--', linewidth=1.5, label=r'$\alpha = 0.05$')
     
     # Place legend outside the plot
     plt.legend(frameon=False, fontsize=8, handlelength=1, borderpad=0,

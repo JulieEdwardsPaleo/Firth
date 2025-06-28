@@ -15,7 +15,6 @@ from statsmodels.tsa.stattools import acf
 import matplotlib.gridspec as gridspec
 
 ## data read in of aMXD chronologies
-
 directory_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'QWA', 'chronologies')
 combined_df = pd.DataFrame()
 for filename in os.listdir(directory_path):
@@ -88,8 +87,9 @@ sfrcs_p = recons_df[['pbw10','pbw20','pbw40','pbw80','pbw100']]
 
 
 
-# read in Anchukaitis et al., 2013 MXD data (from ITRDB)
+# read in Anchukaitis et al., 2013 MXD data 
 f_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'FR_MXD.csv')
+
 og=pd.read_csv(f_path)
 og.index=og['age_AD']
 ogoverlap=og.loc[1150:2002]['trsgiFir']
@@ -108,9 +108,9 @@ for column in sfrcs_p.columns:
 fig=plt.subplots(figsize=(3.5,3))
 plt.plot(ogbwr,'-o',color='k')
 plt.plot(ogr,':o',color='k')
-plt.ylim(0.75,0.9)
+#plt.ylim(0.75,0.9)
 plt.xticks([0,1,2,3,4],labels=['aMXD10','aMXD20','aMXD40','aMXD80','aMXD100'],fontsize=9)
-plt.grid()
+plt.grid(linestyle='--')
 plt.title('Correlation with 2013MXD')
 plt.ylabel('R')
 plt.savefig(os.path.join(os.path.dirname(os.getcwd()), 'Figures', '2013corr.eps'), format='eps',bbox_inches='tight')
@@ -139,9 +139,9 @@ def spline(x, y, period=None):
 splineamount=100
 fig=plt.figure(figsize=(6,3))
 plt.plot(ogoverlap.index,spline(ogyhat.index,ogyhat,100),'k',linewidth=2,label='2013MXD')
-plt.plot(recons_df.loc[1150:2021].index,spline(recons_df.loc[1150:2021].index,recons_df.loc[1150:2021]['pbw10'],splineamount),label='aMXD 10 $\mu$m',color='#D75E9B')
+plt.plot(recons_df.loc[1150:2021].index,spline(recons_df.loc[1150:2021].index,recons_df.loc[1150:2021]['pbw10'],splineamount),label='aMXD 10 $\mu$m',color='#D75E6A')
 plt.plot(recons_df.loc[1150:2021].index,spline(recons_df.loc[1150:2021].index,recons_df.loc[1150:2021]['pbw20'],splineamount),label='aMXD 20 $\mu$m',color='#A21C57')
-plt.plot(recons_df.loc[1150:2021].index,spline(recons_df.loc[1150:2021].index,recons_df.loc[1150:2021]['pbw80'],splineamount),label='aMXD 80 $\mu$m',color='#660C23')
+plt.plot(recons_df.loc[1150:2021].index,spline(recons_df.loc[1150:2021].index,recons_df.loc[1150:2021]['pbw80'],splineamount),label='aMXD 80 $\mu$m',color='#49006a')
 plt.legend(frameon=False,fontsize=9)
 plt.grid(linewidth=0.5)
 plt.ylim(6,12)

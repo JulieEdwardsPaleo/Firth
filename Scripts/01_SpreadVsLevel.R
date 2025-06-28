@@ -8,21 +8,17 @@ library(here)
 # Define the base path
 base_path <- here::here("Data/QWA/raw")
 
-# List all files that match the expected pattern
 file_paths <- list.files(base_path, pattern = "MXDCWA_.*_.*mu\\.txt", full.names = TRUE)
 
 
-# Function to process each file
 process_file <- function(file_path) {
   # Extract method and resolution from the filename
   parts <- strsplit(basename(file_path), "_")[[1]]
   method <- parts[2]
   resolution <- gsub(".txt", "", parts[3])
   
-  # Read data
   data <- read.table(file_path, header = TRUE, row.names = 1,sep=' ')
 
-  # Convert to RWL format
   rwl_data <- as.rwl(data)
   
   # Apply power transformation
@@ -39,7 +35,6 @@ process_file <- function(file_path) {
   stats_powt=rwl.stats(powt_d)
 
 
-  # Function to calculate moving stats and correlation
   calc_stats <- function(series) {
     moving_avg <- rollapply(series, 2, mean, fill = NA, align = "right")
     moving_sd <- rollapply(series, 2, sd, fill = NA, align = "right")
@@ -59,7 +54,6 @@ process_file <- function(file_path) {
 
 }
 
-# Process all files and compile results
 results <- do.call(rbind, lapply(file_paths, process_file))
 results_long <- pivot_longer(results, cols = c("Correlation_Before", "Correlation_After"),
                              names_to = "Condition", values_to = "Correlation")
@@ -67,7 +61,7 @@ results_long <- results_long %>%
   arrange(Method, Resolution_Order) %>%
   mutate(Resolution = factor(Resolution, levels = unique(Resolution)))
 
-# Plotting the results using bar plots
+# Plotting 
 ggplot(results_long, aes(x = Series, y = Correlation, fill = Condition)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.7)) +
   facet_grid(Resolution ~ Method, scales = "free_x", space = "free") +

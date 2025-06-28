@@ -43,6 +43,20 @@ stats=rwi.stats.running(Badremoved, ids = NULL, period = "max",
 
 write.csv(stats,paste(here::here('Data/QWA/chronology_stats/'),"rbar50year",file_paths[i],sep=''))
 
+window.length=100
+stats=rwi.stats.running(Badremoved, ids = NULL, period = "max",
+                        method = "spearman",
+                        prewhiten=FALSE,n=NULL,
+                        running.window = TRUE,
+                        window.length=100,
+                        window.overlap = 50,
+                        first.start = NULL,
+                        min.corr.overlap = min(30, window.length),
+                        round.decimals = 3,
+                        zero.is.missing = TRUE)
+
+write.csv(stats,paste(here::here('Data/QWA/chronology_stats/'),"rbar100year",file_paths[i],sep=''))
+
 }
 
 
