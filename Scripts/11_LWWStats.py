@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np 
 
 # LLW - add to toGIT folder
-LLWfile = '/Users/julieedwards/Documents/Projects/MANCHA/QWAData/FINAL/concat/Summary/LWW_biweight_10mu.txt'
-df = pd.read_csv(LLWfile, delim_whitespace=True)  # adjust if it's comma-delimited
+LLWfile = '/Users/julieedwards/Documents/Projects/MANCHA/toGit/Firth/Data/QWA/raw/LWW_biweight_10mu.txt'
+df = pd.read_csv(LLWfile, delim_whitespace=True)  
 
 # Drop MCRB08B
 df = df.drop(columns='MCRB_08B', errors='ignore')
@@ -27,6 +27,17 @@ all_lww = all_lww[~pd.isna(all_lww)]
 
 # Compute mean and standard deviation
 mean_lww = np.mean(all_lww)
-sd_lww = np.std(all_lww, ddof=1)  # sample SD
+sd_lww = np.std(all_lww, ddof=1)  
 
 print(f"Mean LWW: {mean_lww:.2f} µm ± {sd_lww:.2f}")
+
+# how many smaller than 80 um?
+threshold = 80.0
+n_total = len(all_lww)
+n_below = (all_lww < threshold).sum()
+
+percentage_below = (n_below / n_total) * 100
+
+print(f"Total rings: {n_total}")
+print(f"Rings < 80 µm: {n_below}")
+print(f"Percentage: {percentage_below:.2f}%")

@@ -75,7 +75,7 @@ for e,column in enumerate(sub.columns):
     c = ax.contourf(x, y, R0, bins,cmap='coolwarm', extend='both')
     cbar = fig.colorbar(c, ax=ax, orientation='vertical', pad=0.01,
                     ticks=[-0.8,-0.4,0,0.4,0.8],aspect=20,location='right')
-    cbar.set_label('R', rotation=0, labelpad=5)
+    cbar.set_label(r'$r$', rotation=0, labelpad=5)
     ax.set_yticks([0,20,40,60,80])
     stipple_x, stipple_y = np.where(P0 > 0.01)
     ax.scatter(stipple_y + 1, stipple_x,s=.01, c='k', alpha=0.6)
@@ -268,7 +268,7 @@ x, y = np.meshgrid(np.arange(1, 366), np.arange(1, 91))
 c = ax1.contourf(x, y, R0, bins, cmap='coolwarm', extend='both')
 cbar = fig.colorbar(c,  orientation='vertical', pad=0.01,
                     ticks=[-0.8, -0.4, 0, 0.4, 0.8], aspect=20, location='right')
-cbar.set_label('R', rotation=0, labelpad=5,fontsize=9)
+cbar.set_label(r'$r$', rotation=0, labelpad=5,fontsize=9)
 cbar.set_ticklabels(ticklabels=[-0.8,-0.4,0,0.4,0.8],fontsize=9)
 stipple_x, stipple_y = np.where(P0 > 0.01)
 ax1.scatter(stipple_y + 1, stipple_x, s=.01, c='k', alpha=0.6)
@@ -352,7 +352,7 @@ axs[3].set_xticks([1, 3, 5, 7, 9, 11])
 axs[3].set_xticklabels(months_labels, fontsize=9)
 axs[3].grid(True, which='both', axis='both', linestyle='--', linewidth=0.7, zorder=0)
 axs[3].set_axisbelow(True)
-axs[3].set_ylabel('R', fontsize=9, rotation=0)
+axs[3].set_ylabel(r'$r$', fontsize=9, rotation=0)
 axs[3].yaxis.set_label_position("right")
 axs[3].yaxis.tick_right()
 axs[3].tick_params(axis='y', direction='in', labelright=True, labelleft=False, labelsize=9)
@@ -387,7 +387,7 @@ ax3.scatter(lon_grid[downsampled_indices], lat_grid[downsampled_indices], s=.005
 
 cbar = fig.colorbar(correlation_plot, ax=ax3, orientation='vertical', fraction=0.0133, pad=0.01,
                     ticks=[-0.8, -0.4, 0, 0.4, 0.8], aspect=20, location='right')
-cbar.set_label('R', rotation=0, labelpad=5,fontsize=9)
+cbar.set_label(r'$r$', rotation=0, labelpad=5,fontsize=9)
 cbar.set_ticklabels(ticklabels=[-0.8, -0.4, 0, 0.4, 0.8],fontsize=9)
 lat_point = 68.67
 lon_point = -141.05
@@ -408,3 +408,15 @@ plt.subplots_adjust(left=0.0, right=1, top=0.95, bottom=0.05, hspace=0)
 
 plt.savefig(os.path.join(os.path.dirname(os.getcwd()), 'Figures', 'climatepanel_ERA5.eps'), format='eps',bbox_inches='tight')
 plt.show()
+
+
+
+
+
+
+
+
+
+
+
+

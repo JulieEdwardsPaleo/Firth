@@ -1,11 +1,9 @@
+import os
 import pandas as pd
 from csaps import csaps
 import numpy as np
 from math import cos, pi
 from sklearn.preprocessing import StandardScaler
-import os
-import seaborn as sns
-from scipy.signal import coherence
 import netCDF4 as nc
 from datetime import datetime
 import utils as u  
@@ -87,27 +85,6 @@ for proxy_column in proxy_columns:
 results_df = pd.DataFrame(results)
 recons_df = pd.DataFrame(Recons)
 sfrcs_p = recons_df[['pbw10','pbw20','pbw40','pbw80','pbw100']]
-
-
-runnin20=recons_df['pbw10'].rolling(window=20).mean()
-fig, ax = plt.subplots(figsize=(4, 3))  
-plt.grid(linestyle='--',zorder=1)
-sns.histplot(runnin20, kde=False, stat="density", color='grey', alpha=0.6, ax=ax, binwidth=0.25,zorder=2)
-sns.kdeplot(runnin20, cumulative=False, color='k', ax=ax)
-sns.kdeplot(runnin20, cumulative=True, color='red', ax=ax,clip=(runnin20.min(),runnin20.max()))
-ax.set_xlabel('Reconstructed Temperature ($^\circ$C)')
-ax.set_ylabel('Density')
-ax.set_title('2002-2021 is hottest 20-year period',fontsize=9)
-ax.text(10.35, 0.6, '2002-2021',fontsize=9,rotation=90)
-ax.axvline(runnin20.loc[2021], linestyle='--', color='k')
-plt.legend(frameon=False,fontsize=9)
-plt.xticks([6,7,8,9,10,11])
-plt.xlim(5,11)
-plt.tight_layout()
-plt.show()
-
-
-
 
 
 
@@ -232,12 +209,12 @@ ax3 = fig.add_subplot(gs[0, 2])
 ax3.plot(r10,'-o',label='aMXD10',color="#D75E6A")
 ax3.plot(r20,'-o',label='aMXD20',color='#A21C57')
 ax3.plot(r80,'-o',label='aMXD80',color='#49006a')
-ax3.axvline(3.5)
+#ax3.axvline(3.5)
 ax3.set_yticks([0.6,0.7,0.8],labels=[0.6,0.7,0.8],fontsize=9)
 ax3.yaxis.set_label_position("right")
 ax3.yaxis.tick_right()
 ax3.text(-0.8,0.83,'b)',fontsize=9)
-ax3.set_ylabel('R', fontsize=9, rotation=0, labelpad=10, ha='center')
+ax3.set_ylabel(r'$r$', fontsize=9, rotation=0, labelpad=10, ha='center')
 #ax3.set_xlabel('High-pass filter (n years)  Low-pass filter (n years)',fontsize=9)
 ax3.grid(linestyle='--',color=[0.8,0.8,0.8])
 ax3.set_xticks([0,1,2,3,4],labels=['H10','H30',' None','L5','L20'],fontsize=9)
@@ -290,3 +267,53 @@ plt.show()
 
 
 
+
+
+
+############## moving correlation with Gershunov test
+
+
+
+sf_aligned = sfrcs_p.reset_index().rename(columns={'Unnamed: 0':'year'})
+df_aligned = pd.merge(y, sf_aligned[['year', 'pbw10','pbw20','pbw80']], on='year', how='inner')
+df_aligned = df_aligned.set_index('year')
+
+
+window = 21
+step = window // 2
+
+
+# rolling correlation 
+rolcorr = df_aligned['temperature'].rolling(window=window, center=True).corr(df_aligned['pbw10'])
+rolcorr20 = df_aligned['temperature'].rolling(window=window, center=True).corr(df_aligned['pbw20'])
+rolcorr80 = df_aligned['temperature'].rolling(window=window, center=True).corr(df_aligned['pbw80'])
+
+obs10 = rolcorr.std(skipna=True)
+obs20 = rolcorr20.std(skipna=True)
+obs80 = rolcorr80.std(skipna=True)
+sd99, sd95, sd90, sd5, psig10=u.gsbtest_fast(len(df_aligned),10000,window,df_aligned['temperature'].corr(df_aligned['pbw10']),1,obs10)
+sd99, sd95, sd90, sd5, psig20=u.gsbtest_fast(len(df_aligned),10000,window,df_aligned['temperature'].corr(df_aligned['pbw20']),1,obs20)
+sd99, sd95, sd90, sd5, psig80=u.gsbtest_fast(len(df_aligned),10000,window,df_aligned['temperature'].corr(df_aligned['pbw80']),1,obs80)
+
+print(psig10,psig20,psig80)
+
+
+plt.figure(figsize=(5,4))
+
+plt.plot(rolcorr.index, rolcorr.values, color='#D75E6A', label='aMXD 10 $\mu$m')
+plt.plot(rolcorr20.index, rolcorr20.values, color='#A21C57', label='aMXD 20 $\mu$m')
+plt.plot(rolcorr80.index, rolcorr80.values, color='#49006a', label='aMXD 80 $\mu$m')
+plt.grid(linestyle='--')
+plt.xlabel("Year (center of window)",fontsize=9)
+plt.ylabel(r'$r$',fontsize=9)
+plt.xlim(1958, 2013)   
+plt.ylim(0, 1)
+plt.axhline(0.43,linestyle='--',color=[0.4,0.4,0.4]) #nominal n=21 years 0.05 significance level (r=0.43)
+plt.xticks([1960, 1970, 1980, 1990, 2000, 2010], fontsize=9)
+plt.xticks([1960,1970,1980,1990,2000,2010],fontsize=9)
+plt.title("Mid-July to Mid-August Temperature vs aMXD",fontsize=9)
+plt.legend(frameon=False, fontsize=9, handlelength=1,
+           labelspacing=0.3, handletextpad=0.5,
+           facecolor='white')
+plt.savefig(os.path.join(os.path.dirname(os.getcwd()), 'Figures', 'MovingCorr.eps'), format='eps',bbox_inches='tight')
+plt.show()

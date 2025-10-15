@@ -181,45 +181,43 @@ data = {
 }
 
 #plotting function
-def plot_unique_p_values(data):
-    unique_p_values = []
-    for category, metrics in data.items():
-        for metric, df in metrics.items():
-            for _, row in df.iterrows():
+unique_p_values = []
+for category, metrics in data.items():
+    for metric, df in metrics.items():
+        for _, row in df.iterrows():
                 unique_p_values.append({
                     'category': category,
                     'metric': metric,
                     'p_value': row['eta_squared']
                 })
     
-    unique_p_values_df = pd.DataFrame(unique_p_values)
-    plt.figure(figsize=(5.5, 4))    
-    palette = sns.color_palette("colorblind", n_colors=4)
+unique_p_values_df = pd.DataFrame(unique_p_values)
+plt.figure(figsize=(5.5, 4))    
+palette = sns.color_palette("colorblind", n_colors=4)
     
-    for idx, category in enumerate(unique_p_values_df['category'].unique()):
-        subset = unique_p_values_df[unique_p_values_df['category'] == category]
-        plt.scatter(subset['metric'], subset['p_value'], label=category, color=palette[idx])
+for idx, category in enumerate(unique_p_values_df['category'].unique()):
+    subset = unique_p_values_df[unique_p_values_df['category'] == category]
+    plt.scatter(subset['metric'], subset['p_value'], label=category, color=palette[idx])
     
-    plt.title('Kruskal–Wallis Test Results',fontsize=9)
-    plt.ylabel(r'Effect Sizes ($\eta^2$)', fontsize=9)
+plt.title('Kruskal–Wallis Test Results',fontsize=9)
+plt.ylabel(r'Effect Sizes ($\eta^2$)', fontsize=9)
     #plt.yscale('log')
     #plt.axhline(y=0.01, color='k', linestyle='--', linewidth=1.5, label=r'$\alpha = 0.01$')
     #plt.axhline(y=0.05, color='red', linestyle='--', linewidth=1.5, label=r'$\alpha = 0.05$')
     
     # Place legend outside the plot
-    plt.legend(frameon=False, fontsize=8, handlelength=1, borderpad=0,
+plt.legend(frameon=False, fontsize=8, handlelength=1, borderpad=0,
                ncols=1, columnspacing=0.5, labelspacing=0.5, handletextpad=0.5,
                bbox_to_anchor=(1.05, 1), loc='upper left')
 
     # Adjust x-ticks labels
-    metrics_unique = ['rbar.eff', 'ar1', 'mk_slope', 'mean', 'std']
-    plt.xticks(ticks=range(len(metrics_unique)), labels=['rbar', 'AR1', 'Slope', 'Mean', 'SD'], rotation=45,fontsize=9)
-    plt.grid(linewidth=0.5, linestyle='--')
-    plt.tight_layout()
-    plt.savefig(os.path.join(os.path.dirname(os.getcwd()), 'Figures','parameter_test.eps'), format='eps', bbox_inches='tight')
-    plt.show()
+metrics_unique = ['rbar.eff', 'ar1', 'mk_slope', 'mean', 'std']
+plt.xticks(ticks=range(len(metrics_unique)), labels=['rbar', 'AR1', 'Slope', 'Mean', 'SD'], rotation=45,fontsize=9)
+plt.grid(linewidth=0.5, linestyle='--')
+plt.tight_layout()
+plt.savefig(os.path.join(os.path.dirname(os.getcwd()), 'Figures','parameter_test.eps'), format='eps', bbox_inches='tight')
+plt.show()
 
 
-# Plot the results, saving to Figures directory
-plot_unique_p_values(data)
+
 

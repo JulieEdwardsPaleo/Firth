@@ -2,16 +2,12 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import zscore, pearsonr
-import powerlaw
 import netCDF4 as nc
 from datetime import datetime
 import os
 import xarray as xr
 import multitaper.mtspec as mtspec
-from csaps import csaps
-from math import cos, pi
-from scipy.signal import lfilter
+import scipy.stats as st
 from sklearn.preprocessing import scale
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.stattools import durbin_watson
@@ -63,7 +59,7 @@ def long_cps(climate,cyr,proxy,pyr,calibrate,validate):
     s3R2c  = rhoc[0,1] ** 2 # square the off-diagonal element
     return yhat, s3R2c,s3RE, s3CE
 
-directory_path = "/Users/julieedwards/Documents/Projects/MANCHA/MXD/nomcrb08_June2024/"
+directory_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'QWA', 'chronologies')
 combined_df = pd.DataFrame()
 
 for filename in os.listdir(directory_path):
@@ -76,7 +72,7 @@ for filename in os.listdir(directory_path):
 sfrcs = combined_df
 sfrcs=sfrcs.loc[1150:2021]
 
-file_path = '/Users/julieedwards/Documents/Projects/MANCHA/Climate/daily/iera5_t2m_daily_-141.05E_68.67N_n.nc'
+file_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'Climate', 'iera5_t2m_daily_-141.05E_68.67N_n.nc')
 dataset = nc.Dataset(file_path)
 t2m = dataset.variables['t2m'][:]
 time = dataset.variables['time'][:]
@@ -133,78 +129,90 @@ results_df = pd.DataFrame(results)
 recons_df = pd.DataFrame(Recons)
 
 
-sfrcs=recons_df[['pbw10','pbw20','pbw80']]
+sfrcs=recons_df[['rcsbw10','rcsbw20','rcsbw80']]
 
 
 start_year = 1150
 end_year = 1800
+
+
+
+
 colors=['#D75E6A','#A21C57','#49006a']
 lab=['aMXD 10 $\mu$m','aMXD 20 $\mu$m','aMXD 80 $\mu$m']
 
 fig, axs = plt.subplots(1,3,figsize=(6.5, 3),sharey=True,sharex=False)
 
+# a
+start_year = 1150
+end_year = 1800
 for i, column in enumerate(sfrcs.columns):
-    sfrcs_data=sfrcs.loc[start_year:end_year][column].values
-    x_sfrcs = mtspec.MTSpec(sfrcs_data, nw, kspec, dt=1.0, nfft=0, iadapt=0, vn=None, lamb=None).rspec()
+    sfrcs_data = sfrcs.loc[start_year:end_year][column].values
+    x_sfrcs = mtspec.MTSpec(sfrcs_data, nw, kspec, dt=1.0).rspec()
+    periods_sfrcs = 1.0 / np.ravel(x_sfrcs[0])
+    axs[0].plot(periods_sfrcs, np.ravel(x_sfrcs[1]), label=lab[i], color=colors[i])
 
-    periods_sfrcs = 1 / x_sfrcs[0]
-    axs[0].plot(periods_sfrcs, x_sfrcs[1], label=lab[i],color=colors[i])
-
-axs[0].set_xscale('log')
-axs[0].set_yscale('log')
-axs[0].grid(True,linestyle='--',color=[0.8,0.8,0.8])
-axs[0].legend(frameon=False,fontsize=9,handlelength=1,borderpad=0,
-           labelspacing=0.3,handletextpad=0.5,loc='upper left')
-
+axs[0].set_xscale('log'); axs[0].set_yscale('log')
+axs[0].grid(True, linestyle='--', color=[0.8,0.8,0.8])
+axs[0].legend(frameon=False, fontsize=9, handlelength=1, borderpad=0,
+           labelspacing=0.3, handletextpad=0.5, loc='upper left')
 axs[0].set_xlabel('Log(Period (years))',fontsize=9)
-axs[0].set_ylabel('Log(PSD)')
-axs[0].set_title('Pre-industrial spectra', y=1,fontsize=9)
+axs[0].set_ylabel('Log(PSD)',fontsize=9)
+axs[0].set_title('Pre-industrial spectra', y=1, fontsize=9)
+
+# b
 start_year = 1150
 end_year = 2021
 for i, column in enumerate(sfrcs.columns):
-    sfrcs_data=sfrcs.loc[start_year:end_year][column].values
-    x_sfrcs = mtspec.MTSpec(sfrcs_data, nw, kspec, dt=1.0, nfft=0, iadapt=0, vn=None, lamb=None).rspec()
+    sfrcs_data = sfrcs.loc[start_year:end_year][column].values
+    x_sfrcs = mtspec.MTSpec(sfrcs_data, nw, kspec, dt=1.0).rspec()
+    periods_sfrcs = 1.0 / np.ravel(x_sfrcs[0])
+    axs[1].plot(periods_sfrcs, np.ravel(x_sfrcs[1]), label=lab[i], color=colors[i])
 
-    periods_sfrcs = 1 / x_sfrcs[0]
-    axs[1].plot(periods_sfrcs, x_sfrcs[1], label=lab[i],color=colors[i])
-
-axs[1].set_xscale('log')
-axs[1].set_yscale('log')
-axs[0].set_xlim(2,1000)
-axs[1].set_xlim(2,1000)
-
-axs[1].grid(True,linestyle='--',color=[0.8,0.8,0.8])
-axs[1].legend(frameon=False,fontsize=9,handlelength=1,borderpad=0,
-           labelspacing=0.3,handletextpad=0.5,loc='upper left')
+axs[1].set_xscale('log'); axs[1].set_yscale('log')
+axs[0].set_xlim(2,1000); axs[1].set_xlim(2,1000)
+axs[1].grid(True, linestyle='--', color=[0.8,0.8,0.8])
+axs[1].legend(frameon=False, fontsize=9, handlelength=1, borderpad=0,
+           labelspacing=0.3, handletextpad=0.5, loc='upper left')
 axs[1].set_xlabel('Log(Period (years))',fontsize=9)
-axs[1].set_title('Full period spectra', y=1,fontsize=9)
-axs[0].text(1.2,300,'a)')
-axs[1].text(1.2,300,'b)')
-axs[2].text(1.5,300,'c)')
+axs[1].set_title('Full period spectra', y=1, fontsize=9)
 
+# panel labels
+axs[0].text(1.2,250,'a)')
+axs[1].text(1.2,250,'b)')
+axs[2].text(1.5,250,'c)')
 
-
+# c
 start_year = 1950
 end_year = 2021
 for i, column in enumerate(sfrcs.columns):
-    sfrcs_data=sfrcs.loc[start_year:end_year][column].values
-    x_sfrcs = mtspec.MTSpec(sfrcs_data, nw, kspec, dt=1.0, nfft=0, iadapt=0, vn=None, lamb=None).rspec()
+    sfrcs_data = sfrcs.loc[start_year:end_year][column].values
+    x_sfrcs = mtspec.MTSpec(sfrcs_data, nw, kspec, dt=1.0).rspec()
+    periods_sfrcs = 1.0 / np.ravel(x_sfrcs[0])
+    axs[2].plot(periods_sfrcs, np.ravel(x_sfrcs[1]), label=lab[i], color=colors[i])
 
-    periods_sfrcs = 1 / x_sfrcs[0]
-    axs[2].plot(periods_sfrcs, x_sfrcs[1], label=lab[i],color=colors[i])
-og_data=y.loc[start_year:end_year].values
-x_og = mtspec.MTSpec(og_data, nw, kspec, dt=1.0, nfft=0, iadapt=0, vn=None, lamb=None).rspec()
-periods_og = 1 / x_og[0]
-axs[2].plot(periods_og, x_og[1], label='ERA5 temperature',color='k')
-axs[2].set_xscale('log')
-axs[2].set_yscale('log')
+# ERA5 spectrum
+og_data = y.loc[start_year:end_year].values
+spec_obj = mtspec.MTSpec(og_data, nw, kspec, dt=1.0)
+freqs, psd = spec_obj.rspec()
+freqs = np.ravel(freqs); psd = np.ravel(psd)
+periods_og = 1.0 / freqs
+
+freqs_ci,ci_pos = spec_obj.rspec(spec_obj.jackspec()) 
+lower, upper = ci_pos[:, 0], ci_pos[:, 1] #5,95% jackknife ci
+freqs_ci = np.ravel(freqs_ci)
+periods_ci = 1.0 / freqs_ci
+
+axs[2].plot(periods_og, psd, label='ERA5 temperature', color='k')
+axs[2].fill_between(periods_ci , lower, upper, color=[0.85,0.85,0.85], alpha=1)
+axs[2].set_xscale('log'); axs[2].set_yscale('log')
 axs[2].set_xlim(2,70)
-axs[2].grid(True,linestyle='--',color=[0.8,0.8,0.8])
-axs[2].legend(frameon=False,fontsize=9,handlelength=1,borderpad=0,
-           labelspacing=0.3,handletextpad=0.5,loc='upper left')
+axs[2].grid(True, linestyle='--', color=[0.8,0.8,0.8])
+axs[2].legend(frameon=False, fontsize=9, handlelength=1, borderpad=0,
+           labelspacing=0.3, handletextpad=0.5, loc='upper left')
 axs[2].set_xlabel('Log(Period (years))',fontsize=9)
-axs[2].set_title('1950–2021 spectra', y=1,fontsize=9)
+axs[2].set_title('1950–2021 spectra', y=1, fontsize=9)
 
 plt.tight_layout(w_pad=-0.5)
-plt.savefig('spectraMTM.eps',format='eps',bbox_inches='tight')
+plt.savefig(os.path.join(os.path.dirname(os.getcwd()), 'Figures', 'spectraMTM.eps'), format='eps',bbox_inches='tight')
 plt.show()

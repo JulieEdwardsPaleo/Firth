@@ -1,12 +1,151 @@
 
 import numpy as np
+import warnings
+warnings.filterwarnings("ignore") 
 from math import cos
 from math import pi
 from csaps import csaps
 from sklearn.preprocessing import scale
 import pandas as pd 
+import numpy as np
+from scipy.linalg import sqrtm
 
 
+# Gershunov Testfunction [sd99,sd95,sd90,sd5,psig]=gsbtest(seriesLength,iters,window,seriesCorrelation,method,obs)
+
+# GSBTEST  'Gershunov' Test of Moving Correlation Significance Levels
+#              
+#       [sd99,sd95,sd90,sd5,psig]=gsbtest(seriesLength,iters,window,seriesCorrelation,method,obs)
+#
+# Implementation of a Monte Carlo type simulation of moving correlation functions 
+# between two weakly correlated white noise series for the purposes of constructing
+# significance test for moving correlation functions based on their standard deviation (Gershunov et al. 2001).
+#
+# Inputs:
+#   seriesLength = length of the time series used in the running correlation analysis
+#   iters = number of Monte Carlo iterations to perform (should be >= 1,000)
+#   window = width (in units of the time step for the data) of the correlation window
+#   seriesCorrelation = desired overall correlation of the simulated time series (simulations will be within 1# of this value)
+#   method [optional] = Which method to use to create correlated random series [default = 1], see below
+#   obs [optional] = find the significance level for a specific (observed) value of the std of the moving correlation function
+#
+# Correlation Methods
+#   1 = Cholsky decomposition of the covariance matrix [default]
+#   2 = Matrix square root
+#
+# Outputs:
+#  sd99  = bootstrapped 99# confidence level
+#  sd95  = bootstrapped 95# confidence level
+#  sd90  = bootstrapped 90# confidence level
+#  sd5   = bootstrapped 5# confidence level  
+#  psig  = significance for specific (observed) standard deviation (obs)
+#
+
+# Example:
+#  > [sd99,sd95]=gsbtest(100,1000,11,0.30,2)
+#
+# sd99 =
+#
+#    0.4002
+#
+# sd95 =
+#
+#    0.3624
+#           
+# NOTE: Although the solution should converge for sN >= 1000, small differences (due to the correlation between
+# the two artificial time series generated in the script), may still result, especially for a small number (<<10000)
+# of simulations; so it is recommended that you verify convergence with several runs and be cautious of values too
+# close to your chosen test statistic (particularly at 90# or 95# CI).  You can compare the above result for 'sd95'
+# to Table 1 from Gershunov et al. 2001 (for interseries r = 0.30, window length = 11, their 95# confidence level = 0.36).
+#
+# References
+# ----------
+# Gershunov, A., N. Schneider, and T. Barnett, 2001. Low-frequency modulation of the ENSO-Indian 
+# monsoon rainfall relationship: Signal or noise?, Journal of Climate, 14: 2486-2492.
+#
+
+# Update History:
+#
+# 09 13 -- minor code improvements for clarity; added 'findnearest' as subfunction
+# 03.11 -- added calculation of 'psig' using input 'obs' 
+# 06.08 -- posted online
+# 10.07 -- initial public version
+# 09.03 -- initial version
+# 
+# Function gsbtest.m written by Kevin Anchukaitis
+# Subfunction build_win is a modification of the function by David Meko (dmeko@ltrr.arizona.edu)
+# Subfunction pairwise is a modification of corrpair.m by David Meko (dmeko@ltrr.arizona.edu)
+# Included subfunction 'findnearest' by Tom Benson
+# tranlsated to Python and vectorized
+
+def gsbtest_fast(seriesLength, iters, window, seriesCorrelation, method=1, obs=None, seed=None):
+    """
+    Vectorized Gershunov Test of Moving Correlation Significance Levels.
+    """
+
+    rng = np.random.default_rng(seed)
+
+    # correlation matrix
+    Rmat = np.array([[1, seriesCorrelation],
+                     [seriesCorrelation, 1]])
+
+    if method == 1:
+        # Cholesky
+        C = np.linalg.cholesky(Rmat)
+        Z = rng.standard_normal((iters, 2, seriesLength))
+        X = np.einsum("ij,njk->nik", C.T, Z)  # shape (iters, 2, seriesLength)
+    elif method == 2:
+        # Matrix square root
+        C = sqrtm(Rmat)
+        Z = rng.standard_normal((iters, 2, seriesLength))
+        X = np.einsum("ij,njk->nik", C, Z)
+    else:
+        raise ValueError("Invalid method, choose 1 (Cholesky) or 2 (matrix sqrt).")
+
+    mcf_std = []
+    for i in range(iters):
+        x1 = build_win(X[i,0,:], window)
+        x2 = build_win(X[i,1,:], window)
+        s  = pairwise_corr(x1, x2)
+        mcf_std.append(np.std(s))
+
+    mcf_std = np.sort(mcf_std)
+
+    sd99 = mcf_std[int(0.99 * iters) - 1]
+    sd95 = mcf_std[int(0.95 * iters) - 1]
+    sd90 = mcf_std[int(0.90 * iters) - 1]
+    sd5  = mcf_std[int(0.05 * iters) - 1]
+
+    psig = None
+    if obs is not None:
+    # percentile location of obs in the null distribution
+        idx = (np.abs(mcf_std - obs)).argmin()
+        psig = idx / len(mcf_std)
+
+    return sd99, sd95, sd90, sd5, psig
+
+
+def build_win(x, m):
+    """Build windowed matrix from time series vector."""
+    x = np.asarray(x).flatten()
+    mx = len(x)
+    if m >= mx:
+        raise ValueError("Window width must be shorter than time series!")
+    # each row = one window
+    return np.array([x[i:i+m] for i in range(mx - m + 1)])
+
+def pairwise_corr(X, Y):
+    """Compute correlation for each row in windowed matrices X and Y."""
+    out = []
+    for i in range(X.shape[0]):
+        r = np.corrcoef(X[i, :], Y[i, :])[0, 1]
+        out.append(r)
+    return np.array(out)
+    
+
+
+
+##### biweight mean
 
 def tbrm(data, c=9):
     e = 1 * pow(10, -8)

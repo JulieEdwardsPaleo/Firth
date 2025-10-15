@@ -13,6 +13,8 @@ from scipy.stats import pearsonr
 from scipy.signal import butter, filtfilt
 from statsmodels.tsa.stattools import acf
 import matplotlib.gridspec as gridspec
+import matplotlib.cm as cm
+
 
 ## data read in of aMXD chronologies
 directory_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'QWA', 'chronologies')
@@ -96,26 +98,6 @@ ogoverlap=og.loc[1150:2002]['trsgiFir']
 
 ogyhat, ogs3R2c, ogs3RE, ogs3CE = u.long_cps(avg_temp_per_year-273.15, avg_temp_per_year.index, ogoverlap, ogoverlap.index, avg_temp_per_year.loc[1950:2002].index, avg_temp_per_year.loc[1950:2002].index)
 
-## plotting
-ogr=[]
-ogbwr=[]
-for column in sfrcs_p.columns:
-    r=pearsonr(ogoverlap,sfrcs_p.loc[1150:2002][column])
-    ogr.append(r.statistic)
-for column in sfrcs_p.columns:
-    rbw=pearsonr(ogoverlap,sfrcs_p.loc[1150:2002][column])
-    ogbwr.append(rbw.statistic)
-fig=plt.subplots(figsize=(3.5,3))
-plt.plot(ogbwr,'-o',color='k')
-plt.plot(ogr,':o',color='k')
-#plt.ylim(0.75,0.9)
-plt.xticks([0,1,2,3,4],labels=['aMXD10','aMXD20','aMXD40','aMXD80','aMXD100'],fontsize=9)
-plt.grid(linestyle='--')
-plt.title('Correlation with 2013MXD')
-plt.ylabel('R')
-plt.savefig(os.path.join(os.path.dirname(os.getcwd()), 'Figures', '2013corr.eps'), format='eps',bbox_inches='tight')
-
-
 
 
 
@@ -135,15 +117,18 @@ def spline(x, y, period=None):
 
 
 ## plotting 2013 MXD with aMXD
-
+cmap = cm.get_cmap("magma", 7)
 splineamount=100
 fig=plt.figure(figsize=(6,3))
+plt.plot(recons_df.loc[1150:2021].index,spline(recons_df.loc[1150:2021].index,recons_df.loc[1150:2021]['pbw10'],splineamount),label='aMXD 10 $\mu$m',color=cmap(5))
+plt.plot(recons_df.loc[1150:2021].index,spline(recons_df.loc[1150:2021].index,recons_df.loc[1150:2021]['pbw20'],splineamount),label='aMXD 20 $\mu$m',color=cmap(4))
+plt.plot(recons_df.loc[1150:2021].index,spline(recons_df.loc[1150:2021].index,recons_df.loc[1150:2021]['pbw40'],splineamount),label='aMXD 40 $\mu$m',color=cmap(3))
+plt.plot(recons_df.loc[1150:2021].index,spline(recons_df.loc[1150:2021].index,recons_df.loc[1150:2021]['pbw80'],splineamount),label='aMXD 80 $\mu$m',color=cmap(2))
+plt.plot(recons_df.loc[1150:2021].index,spline(recons_df.loc[1150:2021].index,recons_df.loc[1150:2021]['pbw100'],splineamount),label='aMXD 100 $\mu$m',color=cmap(1))
+
 plt.plot(ogoverlap.index,spline(ogyhat.index,ogyhat,100),'k',linewidth=2,label='2013MXD')
-plt.plot(recons_df.loc[1150:2021].index,spline(recons_df.loc[1150:2021].index,recons_df.loc[1150:2021]['pbw10'],splineamount),label='aMXD 10 $\mu$m',color='#D75E6A')
-plt.plot(recons_df.loc[1150:2021].index,spline(recons_df.loc[1150:2021].index,recons_df.loc[1150:2021]['pbw20'],splineamount),label='aMXD 20 $\mu$m',color='#A21C57')
-plt.plot(recons_df.loc[1150:2021].index,spline(recons_df.loc[1150:2021].index,recons_df.loc[1150:2021]['pbw80'],splineamount),label='aMXD 80 $\mu$m',color='#49006a')
-plt.legend(frameon=False,fontsize=9)
-plt.grid(linewidth=0.5)
+plt.legend(frameon=False,fontsize=9,ncol=2)
+plt.grid(linewidth=0.5,linestyle='--')
 plt.ylim(6,12)
 plt.xlim(1150,2021)
 plt.xlabel('Year',fontsize=9)

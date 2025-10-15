@@ -1,7 +1,6 @@
 import pandas as pd
-from csaps import csaps
 import numpy as np
-from math import cos, pi
+
 from sklearn.preprocessing import StandardScaler
 import os
 import netCDF4 as nc
@@ -9,13 +8,10 @@ from datetime import datetime, timedelta
 import utils as u  
 import matplotlib.pyplot as plt
 from statsmodels.stats.stattools import durbin_watson
-from sklearn.preprocessing import scale
-from scipy.stats import pearsonr
-from scipy.signal import butter, filtfilt
-from statsmodels.tsa.stattools import acf
 
 
-directory_path = "/Users/julieedwards/Documents/Projects/MANCHA/MXD/nomcrb08_June2024/"
+
+directory_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'QWA', 'chronologies')
 combined_df = pd.DataFrame()
 
 for filename in os.listdir(directory_path):
@@ -28,7 +24,7 @@ for filename in os.listdir(directory_path):
 sfrcs = combined_df
 sfrcs=sfrcs.loc[1150:2021]
 
-file_path = '/Users/julieedwards/Documents/Projects/MANCHA/Climate/daily/iera5_t2m_daily_-141.05E_68.67N_n.nc'
+file_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'Climate', 'iera5_t2m_daily_-141.05E_68.67N_n.nc')
 dataset = nc.Dataset(file_path)
 t2m = dataset.variables['t2m'][:]
 time = dataset.variables['time'][:]
@@ -84,10 +80,9 @@ for proxy_column in proxy_columns:
 
 results_df = pd.DataFrame(results)
 recons_df = pd.DataFrame(Recons)
-
-
-
 recons_pbw = recons_df
+
+
 
 
 f_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'FR_MXD.csv')
@@ -168,8 +163,13 @@ def monte_carlo_sea(df, events, baseline_years=3, window_years=5, num_simulation
     
     return ci_9th, ci_95th
 
+# top 20 in terms of SAOD_NH
+events_toohey2017=[1171,1182,1230,1257,1286,1329,1345,1453,1458,1477,1585,1600,1640,1695,1729,1783,1809,1815,1831,1883] 
 
-events=[1171, 1182, 1191, 1230, 1258, 1276, 1286, 1345, 1453, 1458, 1595, 1601, 1641, 1695, 1783, 1809, 1815, 1832, 1836, 1884, 1991]
+Siglevents=[1171, 1182, 1191, 1230, 1258, 1276, 1286, 1345, 1453, 1458, 1595, 1601, 1641, 1695, 1783, 1809, 1815, 1832, 1836, 1884,1991]
+
+events=events_toohey2017
+
 df = pd.DataFrame(recons_df['pbw10'])
 sea_10 = calculate_sea_dataframe(df, events)
 ci_5th, ci_95th = monte_carlo_sea(df, events)
@@ -213,11 +213,7 @@ sea_OG['CI_5th'] = ci_5th
 sea_OG['CI_95th'] = ci_95th
 
 
-df = pd.DataFrame(DA2006['RCS recon'])
-sea_DA2006 = calculate_sea_dataframe(df, events)
-ci_5th, ci_95th = monte_carlo_sea(df, events)
-sea_DA2006['CI_5th'] = ci_5th
-sea_DA2006['CI_95th'] = ci_95th
+
 
 
 sea_summary = calculate_sea_dataframe(recons_pbw, events)
@@ -247,14 +243,14 @@ for i, col in enumerate(group1):
     p=ax1.plot(sea_bw.index, sea_bw[col], label=lab[i], linestyle=line_styles_group1[i],
              color=colors_group1[i],linewidth=width_group1[i],zorder=3)
 
-ax1.plot(sea_10[['CI_5th','CI_95th']],linestyle='--',color='#D75E6A',linewidth=1.5)
-ax1.plot(sea_20[['CI_5th','CI_95th']],linestyle='--',color='#A21C57',linewidth=1.5)
-ax1.plot(sea_80[['CI_5th','CI_95th']],linestyle='--',color='#49006a',linewidth=1.5)
+ax1.plot(sea_10[['CI_5th','CI_95th']],linestyle='--',color='#D75E6A',linewidth=1)
+ax1.plot(sea_20[['CI_5th','CI_95th']],linestyle='--',color='#A21C57',linewidth=1)
+ax1.plot(sea_80[['CI_5th','CI_95th']],linestyle='--',color='#49006a',linewidth=1)
 #plt.plot(sea_bw.index, sea_bw, marker='o')
 ax1.axhline(0, color='black', linestyle='--',linewidth=0.5)
 ax1.axvline(0,color='k', linestyle='--')
 ax1.set_title(f'Volcanic eruption SEA',fontsize=9)
-ax1.set_xlabel('Years from peak forcing',fontsize=9)
+ax1.set_xlabel('Years from Eruption',fontsize=9)
 ax1.set_ylabel('Temperature Anomaly',fontsize=9)
 ax1.set_ylim(-2,1)
 ax1.set_xlim(-3,5)
@@ -266,8 +262,7 @@ ax1.text(5.1,0.8,'95%',fontsize=8,horizontalalignment='left',
         verticalalignment='center')
 ax1.text(5.1,-0.85,'5%',fontsize=8,horizontalalignment='left',
         verticalalignment='center')
-
-plt.savefig('SEA_v2.eps', format='eps',bbox_inches='tight')
+plt.savefig(os.path.join(os.path.dirname(os.getcwd()), 'Figures', 'SEA_v2.eps'), format='eps',bbox_inches='tight')
 
 
 
@@ -305,7 +300,7 @@ ax1.plot(sea_80[['CI_5th','CI_95th']],linestyle='--',color='#49006a',linewidth=1
 ax1.axhline(0, color='black', linestyle='--',linewidth=0.5)
 ax1.axvline(0,color='k', linestyle='--')
 ax1.set_title(f'Biweight aggregation',fontsize=9)
-ax1.set_xlabel('Years from peak forcing',fontsize=9)
+ax1.set_xlabel('Years from Eruption',fontsize=9)
 ax1.set_ylabel('Temperature Anomaly',fontsize=9)
 ax1.set_ylim(-2,1)
 ax1.set_xlim(-3,5)
@@ -342,7 +337,7 @@ ax2.plot(seaq_80[['CI_5th','CI_95th']],linestyle='--',color='#49006a',linewidth=
 ax2.axhline(0, color='black', linestyle='--',linewidth=0.5)
 ax2.axvline(0,color='k', linestyle='--')
 ax2.set_title(f'Q75 aggregation',fontsize=9)
-ax2.set_xlabel('Years from peak forcing',fontsize=9)
+ax2.set_xlabel('Years from Eruption',fontsize=9)
 #ax2.set_ylabel('Temperature anomaly from background mean',fontsize=9)
 ax2.set_ylim(-2,1)
 ax2.set_xlim(-3,5)
@@ -357,5 +352,5 @@ ax2.text(5.1,0.8,'95%',fontsize=8,horizontalalignment='left',
 ax2.text(5.1,-0.85,'5%',fontsize=8,horizontalalignment='left',
         verticalalignment='center')
 plt.tight_layout(w_pad=-.4)
-plt.savefig('SEAfull.eps',format='eps',bbox_inches='tight')
+plt.savefig(os.path.join(os.path.dirname(os.getcwd()), 'Figures', 'SEAfull.eps'), format='eps',bbox_inches='tight')
 plt.show()

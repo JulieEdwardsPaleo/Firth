@@ -46,7 +46,7 @@ def long_cps(climate,cyr,proxy,pyr,calibrate,validate):
     s3R2c  = rhoc[0,1] ** 2 # square the off-diagonal element
     return yhat, s3R2c,s3RE, s3CE
 
-file_path = '/Users/julieedwards/Documents/Projects/MANCHA/Climate/daily/iera5_t2m_daily_-141.05E_68.67N_n.nc'
+file_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'Climate', 'iera5_t2m_daily_-141.05E_68.67N_n.nc')
 dataset = nc.Dataset(file_path)
 t2m = dataset.variables['t2m'][:]
 time = dataset.variables['time'][:]
@@ -67,7 +67,7 @@ avg_temp_per_year = filtered_df.groupby('year')['temperature'].mean()
 y=avg_temp_per_year-273.15
 
 
-directory_path = "/Users/julieedwards/Documents/Projects/MANCHA/MXD/nomcrb08_June2024/"
+directory_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'QWA', 'chronologies')
 combined_df = pd.DataFrame()
 for filename in os.listdir(directory_path):
     if filename.startswith("noFill_"):
@@ -80,6 +80,7 @@ sfrcs = combined_df
 sfrcs=sfrcs.loc[1150:2021]
 
 datasets=[]
+directory_path = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'QWA', 'raw')
 for filename in os.listdir(directory_path):
     if filename.startswith('col'):
         file_path = os.path.join(directory_path, filename)
@@ -101,7 +102,7 @@ aMXD100 = combined_dataarray.sel(res='colpbw100.ind').to_dataframe().drop(column
 
 
 
-rw=pd.read_csv('/Users/julieedwards/Documents/Projects/MANCHA/QWAData/FINAL/concat/Summary/MRW_q75_20mu.txt',delim_whitespace=True)
+rw=pd.read_csv('/Users/julieedwards/Documents/Projects/MANCHA/toGit/Firth/Data/QWA/raw/MRW_biweight_10mu.txt',delim_whitespace=True)
 rw.index=rw['YEAR']
 rw=rw.drop(columns=['YEAR'])
 rw.columns = [col.replace('_', '') for col in rw.columns]
@@ -220,7 +221,7 @@ ax2.text(-0.07,0.0267,'b)')
 #ax2.set_yticklabels([0.008,0.01,0.015,0.02,0.025,0.03],fontsize=9)
 ax2.grid(True, axis='y')
 plt.tight_layout(w_pad=0)
-plt.savefig('/Users/julieedwards/Documents/Projects/MANCHA/Scripts/FINAL/pbwmkindustrial300_v2.eps',format='eps',bbox_inches='tight')
+plt.savefig(os.path.join(os.path.dirname(os.getcwd()), 'Figures', 'pbwmkindustrial300_v2.eps'), format='eps',bbox_inches='tight')
 plt.show()
 
 labels=['aMXD10','aMXD20','aMXD40','aMXD80','aMXD100']
@@ -240,4 +241,5 @@ plt.ylim(0.1,0.5)
 plt.ylabel('Spearman Rank Correlation Coefficient',fontsize=9)
 #ax1.set_yticklabels([0,0.005,0.01,0.015,0.02,0.025,0.03],fontsize=9)
 plt.grid(True, axis='y')
-plt.savefig('/Users/julieedwards/Documents/Projects/MANCHA/Scripts/FINAL/spearman_v2.eps',format='eps',bbox_inches='tight')
+plt.savefig(os.path.join(os.path.dirname(os.getcwd()), 'Figures', 'spearman_v2.eps'), format='eps',bbox_inches='tight')
+
